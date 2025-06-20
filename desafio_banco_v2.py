@@ -2,6 +2,8 @@ from datetime import date
 
 def depositar(saldo, valor_deposito, extrato, /):
 
+
+
     if not usuario:
         print("Usuário não encontrado.")
         return
@@ -39,19 +41,19 @@ def listar_usuarios(cpf=None):
             if usuario['cpf'] == cpf:
                 return usuario
 
-def listar_contas_correntes(usuario=None):
+def listar_contas_correntes(numero_conta_buscada=None):
     if not contas_correntes:
         print("Nenhuma conta corrente cadastrada.")
         return
 
-    if usuario is None:
+    if numero_conta_buscada is None:
         print("Contas correntes cadastradas:".center(50, "="))
         for conta in contas_correntes:
             print(f"Agência: {conta['agencia']}, Número da Conta: {conta['numero_conta']}, Titular: {conta['usuario']}")
         print("".center(50, "="))
     else:
         for conta in contas_correntes:
-            if conta['cpf'] == usuario['cpf']:
+            if conta['numero_conta'] == int(numero_conta_buscada):
                 return conta
 
 def sacar(*, saldo, valor_saque, extrato, limite, numero_saques, limite_saque):
@@ -183,79 +185,77 @@ while True:
             print(f"Erro ao criar usuário: {e}")
 
     elif opcao.upper() == "D":
-        # Solicita os dados da conta corrente
-        cpf = input("Informe o cpf do usuário: ")
+        try:
+            # Solicita os dados da conta corrente
+            numero_conta = input("Informe o numero da conta: ")
 
-        # Verifica se o CPF existe
-        usuario = listar_usuarios(cpf)
+            # Busca a conta corrente do usuário
+            conta = listar_contas_correntes(numero_conta)
 
-        if not usuario:
-            print("Usuário não encontrado. Por favor, crie um usuário antes de criar uma conta corrente.")
-            continue
+            if not conta:
+                print("Número da conta não encontrado. Por favor, crie uma conta antes de realizar um depósito.")
+                continue
+        
+            # Solicita o valor do depósito
+            valor_deposito = float(input("Informe o valor que deseja depositar: ")) 
 
-         # Busca a conta corrente do usuário
-        conta = listar_contas_correntes(usuario)
+            if valor_deposito > 0:
+                    # Chama a função depositar passando o saldo, valor_deposito e extrato
+                    conta['saldo'], conta['extrato'] = depositar(conta['saldo'], valor_deposito, conta['extrato'])
 
-        # Solicita o valor do depósito
-        valor_deposito = float(input("Informe o valor que deseja depositar: ")) 
+                    print(f"O depósito no valor de R$ {valor_deposito: .2f} foi realizado com sucesso!\nSaldo atual: R$ {conta['saldo']: .2f}")
+            else:
+                print("O valor inserido é inválido")
 
-        if valor_deposito > 0 and conta:
-            try:
-                # Chama a função depositar passando o saldo, valor_deposito e extrato
-                conta['saldo'], conta['extrato'] = depositar(conta['saldo'], valor_deposito, conta['extrato'])
-
-                print(f"O depósito no valor de R$ {valor_deposito: .2f} foi realizado com sucesso!\nSaldo atual: R$ {conta['saldo']: .2f}")
-            except ValueError as e:
-                print(f"Erro ao realizar depósito: {e}")
-        else:
+        except ValueError:
             print("O valor inserido é inválido")
      
     elif opcao.upper() == "S":
-        # Solicita os dados da conta corrente
-        cpf = input("Informe o cpf do usuário: ")
+        try:
+            # Solicita os dados da conta corrente
+            numero_conta = input("Informe o numero da conta: ")
 
-        usuario = listar_usuarios(cpf)
+            # Busca a conta corrente do usuário
+            conta = listar_contas_correntes(numero_conta)
 
-        if not usuario:
-            print("Usuário não encontrado. Por favor, crie um usuário antes de realizar um saque.")
+            if not conta:
+                print("Número da conta não encontrado. Por favor, crie uma conta antes de realizar um depósito.")
+                continue
+
+            valor_saque = float(input("Informe o valor que deseja sacar: "))
+
+            if valor_saque > 0:
+                    conta['saldo'], conta['extrato'], conta['numero_saques'] = sacar(saldo=conta['saldo'], valor_saque=valor_saque, extrato=conta['extrato'], limite=limite, numero_saques=conta['numero_saques'], limite_saque=LIMITE_SAQUES)
+                    print(f"O saque no valor de R$ {valor_saque: .2f} foi realizado com sucesso!\nSaldo atual: R$ {conta['saldo']: .2f}")
+            else:
+                print("Não foi possível executara operação, o valor inserido é inválido")
+        except ValueError:
+            print("O valor inserido é inválido")
+        except TypeError:
             continue
-
-        # Busca a conta corrente do usuário
-        conta = listar_contas_correntes(usuario)
-
-        valor_saque = float(input("Informe o valor que deseja sacar: "))
-
-        if valor_saque > 0 and usuario and conta:
-            try:
-                conta['saldo'], conta['extrato'], conta['numero_saques'] = sacar(saldo=conta['saldo'], valor_saque=valor_saque, extrato=conta['extrato'], limite=limite, numero_saques=conta['numero_saques'], limite_saque=LIMITE_SAQUES)
-                print(f"O saque no valor de R$ {valor_saque: .2f} foi realizado com sucesso!\nSaldo atual: R$ {conta['saldo']: .2f}")
-            except ValueError:
-                continue
-            except TypeError:
-                continue
-        else:
-            print("Não foi possível executara operação, o valor inserido é inválido")  
 
     elif opcao.upper() == "E":
-        # Solicita os dados da conta corrente
-        cpf = input("Informe o cpf do usuário: ")
+        try:
+            # Solicita os dados da conta corrente
+            numero_conta = input("Informe o numero da conta: ")
 
-        # Verifica se o CPF existe
-        usuario = listar_usuarios(cpf)
+            # Busca a conta corrente do usuário
+            conta = listar_contas_correntes(numero_conta)
 
-        if not usuario:
-            print("Usuário não encontrado. Por favor, crie um usuário antes de criar uma conta corrente.")
+            if not conta:
+                print("Número da conta não encontrado. Por favor, crie uma conta antes de realizar um depósito.")
+                continue
+
+            extrato = conta['extrato']
+
+            if extrato:
+                extrato_bancario(conta['saldo'], extrato=extrato)
+            else:
+                print("Esta conta ainda não executou operações")  
+        except ValueError:
+            print("O valor inserido é inválido")
+        except TypeError:
             continue
-
-         # Busca a conta corrente do usuário
-        conta = listar_contas_correntes(usuario)
-
-        extrato = conta['extrato']
-
-        if extrato:
-            extrato_bancario(conta['saldo'], extrato=extrato)
-        else:
-            print("Esta conta ainda não executou operações")  
 
     elif opcao.upper() == "LC":
         listar_contas_correntes()

@@ -1,14 +1,40 @@
-# Primeiro desafio - Operações bancárias simples
+# Segundo desafio - Operações bancárias intermediárias
+## Descrição
 
-Fiz o desafio um pouco diferente do proposto, pois queria utilizar o máximo de conhecimento adquirido até aqui, aproveitei e fiz algo um pouquinho além.
+Este projeto é um sistema bancário simples desenvolvido em Python, como parte de um desafio da DIO. O sistema permite realizar operações básicas como depósito, saque e exibição de extrato, além de gerenciar contas e clientes.
 
-## Sobre o projeto
+## Funcionalidades
 
-Este projeto é uma solução para o desafio de operações bancárias simples, desenvolvido em Python. O objetivo é simular funcionalidades básicas de um sistema bancário.
+- **Depósito:** Permite ao usuário depositar valores em sua conta.
+- **Saque:** Permite realizar saques, respeitando limites diários e saldo disponível.
+- **Extrato:** Exibe o histórico de transações da conta.
+- **Cadastro de Cliente:** Permite cadastrar novos clientes com CPF, nome, data de nascimento e endereço.
+- **Cadastro de Conta:** Permite criar novas contas bancárias associadas a clientes existentes.
+- **Listagem de Contas:** Exibe todas as contas cadastradas no sistema.
 
-## Funcionalidades implementadas
+## Como usar
 
-- **Depósito:** Usuários podem realizar depósitos em suas contas.
-- **Saque:** Limita o número de saques diários e o valor máximo por saque, conforme as regras do desafio.
-- **Extrato:** Exibe o histórico de transações realizadas na conta.
-- **Validações:** O sistema faz validações para impedir operações inválidas.
+1. Clone o repositório:
+    ```bash
+    git clone https://github.com/seu-usuario/desafio-banco-v2.git
+    ```
+2. Acesse o diretório do projeto:
+    ```bash
+    cd desafio-banco-v2
+    ```
+3. Execute o arquivo principal:
+    ```bash
+    python desafio_banco_v2.py
+    ```
+
+## Estrutura do Código
+
+O código está estruturado em funções para cada operação bancária, facilitando a manutenção e a leitura. O menu interativo permite ao usuário escolher a operação desejada.
+
+## Requisitos
+
+- Python 3.x
+
+## Autor
+
+Desenvolvido por Everton para o desafio da DIO.
