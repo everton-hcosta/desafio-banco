@@ -16,13 +16,17 @@ Este projeto é um sistema bancário simples desenvolvido em Python, como parte 
 
 1. Clone o repositório:
     ```bash
-    git clone https://github.com/seu-usuario/desafio-banco-v2.git
+    git clone https://github.com/everton-hcosta/desafio-banco.git
     ```
 2. Acesse o diretório do projeto:
     ```bash
-    cd desafio-banco-v2
+    cd desafio-banco
     ```
-3. Execute o arquivo principal:
+3. Mude para a branch `v2`:
+    ```bash
+    git checkout v2
+    ```
+4. Execute o arquivo principal:
     ```bash
     python desafio_banco_v2.py
     ```
