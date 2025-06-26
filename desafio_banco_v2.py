@@ -1,9 +1,160 @@
-from datetime import date
+from datetime import datetime
+from abc import ABC, abstractmethod, classmethod
+
+class Cliente:
+    def __init__(self, endereco, contas):
+        self.endereco = endereco
+        self.contas = []
+
+    def realizar_transacao(self, conta, transacao):
+        transacao.registrar(conta)
+
+    def adicionar_conta(self, conta):
+        self.contas.append(conta)
+
+    def __str__(self):
+        return f"Nome: {self.nome}, Endereço: {self.endereco}"
+    
+class PessoaFisica:
+    def __init__(self, nome, data_nascimento, cpf, endereco):
+        super().__init__(endereco)
+        self.nome = nome
+        self.data_nascimento = data_nascimento
+        self.cpf = cpf
+
+class Conta:
+    def __init__(self, saldo, numero, agencia, cliente, historico):
+        self.saldo = 0.0
+        self.numero = numero
+        self.agencia = "0001"
+        self.cliente = cliente
+        self.historico = Historico()
+
+        @property
+        def saldo(self):
+            return self._saldo
+        
+        @property
+        def nova_conta(cls, cliente, numero):
+            return cls(cliente, numero)
+        
+        @property
+        def sacar(self, valor, numero_saques, limite_saque, limite):
+            if valor > self.saldo:
+                print("Saldo insuficiente")
+
+            elif valor > 0:
+                self._saldo -= valor
+                print("Saque realizado com sucesso!")
+                return True
+                # self._extrato.append(f"Saque: R${valor: .2f} | Data:{date.today().strftime('%d/%m/%Y')}")
+                # self._numero_saques += 1
+            else:
+                print("Não foi possível executar a operação, o valor inserido é inválido")
+
+            return False
+        
+        @property
+        def depositar(self, valor, conta):
+            if not conta:
+                print("Conta não encontrada.")
+                return False
+
+            if valor > 0:
+                self._saldo += valor
+                print("Depósito realizado com sucesso!")
+                return True
+                # extrato.append(f"Depósito: R${valor_deposito: .2f} | Data:{date.today().strftime('%d/%m/%Y')}")
+
+            else:
+                print("O valor inserido é inválido")
+                return False
+        
+        @property
+        def historico(self):
+            return self._historico
+
+
+class ContaCorrente(Conta):
+    def __init__(self, numero, cliente, limite=500.0, limite_saque=3):
+        super().__init__(numero, cliente)
+        self.limite = limite
+        self.limite_saque = limite_saque
+
+    def sacar(self, valor):
+
+        numero_saques = len([transacao for transacao in self.historico.transacao if transacao['tipo'] == Saque.__name__])
+
+        if numero_saques >= self.limite:
+            print("Número máximo de saques diários atingido")
+        
+        elif valor > self.saldo:
+            print("Saldo insuficiente")
+
+        elif valor > self.limite:
+            print("O saque é maior que o valor permitido")
+
+        else:
+            return super().sacar(valor)
+
+        return False
+    
+    def __str__(self):
+        return f"Agência {self.agencia} - Conta Corrente {self.numero} - Cliente: {self.cliente.nome}"
+    
+class Historico:
+    def __init__(self):
+        self.transacoes = []
+
+    def transacoes(self):
+        return self.transacoes
+
+    def adicionar_transacoes(self, transacao):
+        self.transacoes.append({
+            "tipo": transacao.__class__.__name__,
+            "valor": transacao.valor,
+            "data": datetime.now().strftime('%d/%m/%Y %H:%M:%S'),
+        })
+
+class Transacao(ABC):
+    @property
+    @abstractmethod
+    def valor(self):
+        pass
+
+    @classmethod
+    @abstractmethod
+    def registrar(self, conta):
+        pass
+
+class Saque(Transacao):
+    def __init__(self, valor):
+        self.valor = valor
+
+    @property
+    def valor(self):
+        return self._valor
+    
+    def registrar(self, conta):
+        sucesso = conta.sacar(self.valor)
+        if sucesso:
+            conta.historico.adicionar_transacoes(self)
+
+class Deposito(Transacao):
+    def __init__(self, valor):
+        self.valor = valor
+
+    @property
+    def valor(self):
+        return self._valor
+    
+    def registrar(self, conta):
+        sucesso = conta.depositar(self.valor)
+        if sucesso:
+            conta.historico.adicionar_transacoes(self)
+               
 
 def depositar(saldo, valor_deposito, extrato, /):
-
-
-
     if not usuario:
         print("Usuário não encontrado.")
         return
