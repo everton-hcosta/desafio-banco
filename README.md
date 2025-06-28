@@ -1,44 +1,43 @@
-# Segundo desafio - Operações bancárias intermediárias
+# Terceiro desafio - Operações bancárias intermediárias
+
 ## Descrição
 
-Este projeto é um sistema bancário simples desenvolvido em Python, como parte de um desafio da DIO. O sistema permite realizar operações básicas como depósito, saque e exibição de extrato, além de gerenciar contas e clientes.
+Este projeto é uma solução para o desafio de operações bancárias intermediárias proposto pela DIO. O objetivo é criar um sistema bancário simples em Python, permitindo a realização de operações como saque, depósito, extrato e cadastro de usuários e contas.
 
 ## Funcionalidades
 
-- **Depósito:** Permite ao usuário depositar valores em sua conta.
-- **Saque:** Permite realizar saques, respeitando limites diários e saldo disponível.
-- **Extrato:** Exibe o histórico de transações da conta.
-- **Cadastro de Cliente:** Permite cadastrar novos clientes com CPF, nome, data de nascimento e endereço.
-- **Cadastro de Conta:** Permite criar novas contas bancárias associadas a clientes existentes.
-- **Listagem de Contas:** Exibe todas as contas cadastradas no sistema.
+- Cadastro de usuários com CPF, nome, data de nascimento e endereço.
+- Criação de contas bancárias vinculadas a usuários existentes.
+- Depósito em conta.
+- Saque com limite de valor e quantidade diária.
+- Emissão de extrato detalhado das operações.
+- Validação de dados de entrada.
 
-## Como usar
+## Como executar
 
 1. Clone o repositório:
     ```bash
-    git clone https://github.com/everton-hcosta/desafio-banco.git
+    git clone https://github.com/everton-hcosta/desafio-banco
+    cd desafio-banco
     ```
-2. Acesse o diretório do projeto:
+2. Acesse o diretório do projeto
     ```bash
     cd desafio-banco
     ```
-3. Mude para a branch `v2`:
+3. Mude para a branch `v3`:
     ```bash
-    git checkout v2
+    git checkout v3
     ```
-4. Execute o arquivo principal:
+4. Execute o script Python:
     ```bash
-    python desafio_banco_v2.py
+    python desafio_banco_v3.py
     ```
 
-## Estrutura do Código
+## Estrutura do Projeto
 
-O código está estruturado em funções para cada operação bancária, facilitando a manutenção e a leitura. O menu interativo permite ao usuário escolher a operação desejada.
+- `desafio_banco_v3.py`: Código principal do sistema bancário.
+- `README.md`: Documentação do projeto.
 
 ## Requisitos
 
-- Python 3.x
-
-## Autor
-
-Desenvolvido por Everton para o desafio da DIO.
+- Python 3.10 ou superior.

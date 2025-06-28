@@ -20,6 +20,9 @@ class PessoaFisica(Cliente):
         self.data_nascimento = data_nascimento
         self.cpf = cpf
 
+    def __str__(self):
+        return f"Cliente: {self.nome}, CPF: {self.cpf}, Data de Nascimento: {self.data_nascimento}, Endereço: {self.endereco}"
+
 class Conta:
     def __init__(self, numero, cliente):
         self._saldo = 0.0
@@ -66,9 +69,10 @@ class ContaCorrente(Conta):
 
     def sacar(self, valor):
 
-        numero_saques = len([transacao for transacao in self.historico.transacao if transacao['tipo'] == Saque.__name__])
+        numero_saques = len([transacao for transacao in self.historico.transacoes if transacao['tipo'] == Saque.__name__])
 
-        if numero_saques >= self.limite:
+        #FIXME: Verificar as datas dos saques para garantir que não exceda o limite diário
+        if numero_saques >= self.limite_saque:
             print("Número máximo de saques diários atingido")
         
         elif valor > self.saldo:
@@ -88,13 +92,14 @@ class ContaCorrente(Conta):
     
 class Historico:
     def __init__(self):
-        self.transacoes = []
+        self._transacoes = []
 
+    @property
     def transacoes(self):
-        return self.transacoes
+        return self._transacoes
 
     def adicionar_transacoes(self, transacao):
-        self.transacoes.append({
+        self._transacoes.append({
             "tipo": transacao.__class__.__name__,
             "valor": transacao.valor,
             "data": datetime.now().strftime('%d/%m/%Y %H:%M:%S'),
@@ -115,7 +120,7 @@ class Transacao(ABC):
 
 class Saque(Transacao):
     def __init__(self, valor):
-        self.valor = valor
+        self._valor = valor
 
     @property
     def valor(self):
@@ -129,7 +134,7 @@ class Saque(Transacao):
 
 class Deposito(Transacao):
     def __init__(self, valor):
-        self.valor = valor
+        self._valor = valor
 
     @property
     def valor(self):
@@ -163,10 +168,20 @@ class Banco:
         return next((c for c in self.clientes if c.cpf == cpf), None)
 
     def listar_clientes(self):
+        if not self.clientes:
+            print("Nenhum cliente cadastrado.")
+            return
+        
+        print("Lista de Clientes:")
         for c in self.clientes:
             print(c)
 
     def listar_contas(self):
+        if not self.contas:
+            print("Nenhuma conta cadastrado.")
+            return
+        
+        print("Lista de Contas:")
         for c in self.contas:
             print(c)
 
@@ -188,7 +203,6 @@ Selecione uma operação:
 
 # Variáveis iniciais
 banco = Banco()
-clientes = []
 contas = []
 contas_correntes = []
 indice_conta = 1
@@ -227,82 +241,101 @@ while True:
         cliente = PessoaFisica(nome, data_nascimento, cpf, endereco)
         banco.adicionar_cliente(cliente)
 
-    # elif opcao.upper() == "D":
-    #     cpf = input("Digite o CPF do cliente: ")
-    #     cliente = next((c for c in clientes if c.cpf == cpf), None)
+    elif opcao.upper() == "D":
+        # Solicita os dados do cliente
+        cpf = input("Digite o CPF do cliente: ")
+        cliente = next((c for c in banco.clientes if c.cpf == cpf), None)
 
-    #     if not cliente:
-    #         print("Usuário não encontrado.")
-    #         continue
+        if not cliente:
+            print("Usuário não encontrado.")
+            continue
 
-    #     if not cliente.contas:
-    #         print("O cliente não possui contas.")
-    #         continue
+        if not cliente.contas:
+            print("O cliente não possui contas.")
+            continue
 
-    #     print("\nContas do cliente:")
-    #     for i, conta in enumerate(cliente.contas):
-    #         print(f"[{i}] Agência: {conta.agencia}, Número: {conta.numero}")
+        try:
+            if len(cliente.contas) == 1:
+                conta = cliente.contas[0]
+                print(f"Conta única encontrada: Agência: {conta.agencia}, Número: {conta.numero}")
+            else:
+                print("\nContas do cliente:")
 
-    #     try:
-    #         indice = int(input("Escolha o número da conta para depósito: "))
-    #         conta = cliente.contas[indice]
-    #     except (ValueError, IndexError):
-    #         print("Conta inválida.")
-    #         continue
+                for i, conta in enumerate(cliente.contas):
+                    print(f"[{i}] Agência: {conta.agencia}, Número: {conta.numero}")
+                
+                indice = int(input("Escolha uma das opções para realizar o depósito: "))
+                conta = cliente.contas[indice]
+        except (ValueError, IndexError):
+            print("Conta inválida.")
+            continue
 
-    #     try:
-    #         valor = float(input("Digite o valor a depositar: "))
-    #         deposito = Deposito(valor)
-    #         cliente.realizar_transacao(conta, deposito)
-    #     except ValueError:
-    #         print("Valor inválido.")
+        try:
+            valor = float(input("Digite o valor a depositar: "))
+            deposito = Deposito(valor)
+            cliente.realizar_transacao(conta, deposito)
+        except ValueError:
+            print("Valor inválido.")
      
-    # elif opcao.upper() == "S":
-    #     try:
-    #         # Solicita os dados da conta corrente
-    #         numero_conta = input("Informe o numero da conta: ")
+    elif opcao.upper() == "S":
+        # Solicita os dados do cliente
+        cpf = input("Digite o CPF do cliente: ")
+        cliente = next((c for c in banco.clientes if c.cpf == cpf), None)
 
-    #         # Busca a conta corrente do usuário
-    #         conta = listar_contas_correntes(numero_conta)
+        if not cliente:
+            print("Usuário não encontrado.")
+            continue
 
-    #         if not conta:
-    #             print("Número da conta não encontrado. Por favor, crie uma conta antes de realizar um depósito.")
-    #             continue
+        if not cliente.contas:
+            print("O cliente não possui contas.")
+            continue
 
-    #         valor_saque = float(input("Informe o valor que deseja sacar: "))
+        try:
+            if len(cliente.contas) == 1:
+                conta = cliente.contas[0]
+                print(f"Conta única encontrada: Agência: {conta.agencia}, Número: {conta.numero}")
+            else:
+                print("\nContas do cliente:")
 
-    #         if valor_saque > 0:
-    #                 conta['saldo'], conta['extrato'], conta['numero_saques'] = sacar(saldo=conta['saldo'], valor_saque=valor_saque, extrato=conta['extrato'], limite=limite, numero_saques=conta['numero_saques'], limite_saque=LIMITE_SAQUES)
-    #                 print(f"O saque no valor de R$ {valor_saque: .2f} foi realizado com sucesso!\nSaldo atual: R$ {conta['saldo']: .2f}")
-    #         else:
-    #             print("Não foi possível executara operação, o valor inserido é inválido")
-    #     except ValueError:
-    #         print("O valor inserido é inválido")
-    #     except TypeError:
-    #         continue
+                for i, conta in enumerate(cliente.contas):
+                    print(f"[{i}] Agência: {conta.agencia}, Número: {conta.numero}")
 
-    # elif opcao.upper() == "E":
-    #     try:
-    #         # Solicita os dados da conta corrente
-    #         numero_conta = input("Informe o numero da conta: ")
+                indice = int(input("Escolha uma das opções para realizar o saque: "))
+                conta = cliente.contas[indice]
+        except (ValueError, IndexError):
+            print("Conta inválida.")
+            continue
 
-    #         # Busca a conta corrente do usuário
-    #         conta = listar_contas_correntes(numero_conta)
+        try:
+            valor = float(input("Digite o valor do saque: "))
+            saque = Saque(valor)
+            cliente.realizar_transacao(conta, saque)
+        except ValueError:
+            print("Valor inválido.")
 
-    #         if not conta:
-    #             print("Número da conta não encontrado. Por favor, crie uma conta antes de realizar um depósito.")
-    #             continue
+    elif opcao.upper() == "E":
+        try:
+            numero_conta = int(input("Informe o número da conta: "))
+            conta = next((c for c in banco.contas if c.numero == numero_conta), None)
 
-    #         extrato = conta['extrato']
+            if not conta:
+                print("Número da conta não encontrado.")
+                continue
 
-    #         if extrato:
-    #             extrato_bancario(conta['saldo'], extrato=extrato)
-    #         else:
-    #             print("Esta conta ainda não executou operações")  
-    #     except ValueError:
-    #         print("O valor inserido é inválido")
-    #     except TypeError:
-    #         continue
+            extrato = conta.historico.transacoes
+
+            if extrato:
+                print("\nEXTRATO:")
+                for transacao in extrato:
+                    print(f"Data: {transacao['data']} | Tipo: {transacao['tipo']} | Valor: R$ {transacao['valor']:.2f}")
+                print(f"Saldo atual: R$ {conta.saldo:.2f}")
+            else:
+                print("Esta conta ainda não executou operações.")
+        except ValueError:
+            print("O número da conta deve ser um número inteiro.")
+        except TypeError:
+            continue
+
 
     elif opcao.upper() == "LCC":
         banco.listar_contas()
