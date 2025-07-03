@@ -1,5 +1,6 @@
 from datetime import datetime
 from abc import ABC, abstractmethod
+from functools import wraps
 
 class Cliente:
     def __init__(self, endereco):
@@ -22,6 +23,45 @@ class PessoaFisica(Cliente):
 
     def __str__(self):
         return f"Cliente: {self.nome}, CPF: {self.cpf}, Data de Nascimento: {self.data_nascimento}, Endereço: {self.endereco}"
+    
+class Historico:
+    def __init__(self):
+        self._transacoes = []
+
+    @property
+    def transacoes(self):
+        return self._transacoes
+    
+    @staticmethod
+    def registrar_transacao(func):
+        nomes_metodos = {
+            "registrar": "Registro de Transação",
+            "adicionar_conta": "Criação de Conta",
+            "depositar": "Depósito",
+            "sacar": "Saque"
+        }
+
+        def wrapper(*args, **kwargs):
+            nome_metodo = func.__name__
+            nome_amigavel = nomes_metodos.get(nome_metodo, nome_metodo.capitalize())
+            data_hora = datetime.now().strftime('%d/%m/%Y %H:%M:%S')
+            print(f"[{data_hora}] Transação: {nome_amigavel}")
+            return func(*args, **kwargs)
+
+        return wrapper
+
+    def adicionar_transacoes(self, transacao):
+        self._transacoes.append({
+            "tipo": transacao.__class__.__name__,
+            "valor": transacao.valor,
+            "data": datetime.now().strftime('%d/%m/%Y %H:%M:%S'),
+        })
+    
+    def gerar_transacoes(self, tipo=None):
+        for transacao in self._transacoes:
+            if tipo is None or transacao["tipo"].lower() == tipo.lower():
+                yield transacao
+
 
 class Conta:
     def __init__(self, numero, cliente):
@@ -31,6 +71,7 @@ class Conta:
         self.cliente = cliente
         self._historico = Historico()
 
+    @Historico.registrar_transacao
     def sacar(self, valor):
         if valor > self._saldo:
             print("Saldo insuficiente")
@@ -43,6 +84,7 @@ class Conta:
             print("Valor inválido")
             return False
 
+    @Historico.registrar_transacao
     def depositar(self, valor):
         if valor > 0:
             self._saldo += valor
@@ -88,22 +130,6 @@ class ContaCorrente(Conta):
     
     def __str__(self):
         return f"Agência {self.agencia} - Conta Corrente {self.numero} - Cliente: {self.cliente.nome}"
-    
-    
-class Historico:
-    def __init__(self):
-        self._transacoes = []
-
-    @property
-    def transacoes(self):
-        return self._transacoes
-
-    def adicionar_transacoes(self, transacao):
-        self._transacoes.append({
-            "tipo": transacao.__class__.__name__,
-            "valor": transacao.valor,
-            "data": datetime.now().strftime('%d/%m/%Y %H:%M:%S'),
-        })
 
 
 class Transacao(ABC):
@@ -145,12 +171,35 @@ class Deposito(Transacao):
         if sucesso:
             conta.historico.adicionar_transacoes(self)
 
+class ContaIterador:
+    def __init__(self, contas):
+        self._contas = contas
+        self._indice = 0
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        if self._indice >= len(self._contas):
+            raise StopIteration
+
+        conta = self._contas[self._indice]
+        self._indice += 1
+
+        return {
+            "número": conta.numero,
+            "agência": conta.agencia,
+            "cliente": conta.cliente.nome,
+            "saldo": conta.saldo
+        }
+
 
 class Banco:
     def __init__(self):
         self.clientes = []
         self.contas = []
 
+    @Historico.registrar_transacao
     def adicionar_cliente(self, cliente):
         if any(c.cpf == cliente.cpf for c in self.clientes):
             print("Cliente já cadastrado.")
@@ -159,6 +208,7 @@ class Banco:
         print("Cliente adicionado com sucesso.")
         return True
 
+    @Historico.registrar_transacao
     def adicionar_conta(self, conta):
         self.contas.append(conta)
         conta.cliente.adicionar_conta(conta)
@@ -185,6 +235,9 @@ class Banco:
         for c in self.contas:
             print(c)
 
+    def iterar_contas(self):
+        return ContaIterador(self.contas)
+
 
 menu = """
 
@@ -194,8 +247,10 @@ Selecione uma operação:
 [CC] Criar cliente
 [D] Depositar
 [E] Extrato
+[IC] Listar contas
 [LCC] Listar contas correntes
 [LC] Listar clientes
+[LT] Listar transações
 [S] Sacar
 [Q] Sair
 
@@ -336,12 +391,54 @@ while True:
         except TypeError:
             continue
 
+    elif opcao.upper() == "IC":
+        if not banco.contas:
+            print("Nenhuma conta cadastrada.")
+            continue
+        
+        print("Lista de Contas:")
+        for conta in banco.iterar_contas():
+            print(f"Número: {conta['número']}, Agência: {conta['agência']}, Cliente: {conta['cliente']}, Saldo: R$ {conta['saldo']:.2f}")
 
     elif opcao.upper() == "LCC":
         banco.listar_contas()
 
     elif opcao.upper() == "LC":
         banco.listar_clientes()
+
+    elif opcao.upper() == "LT":
+        cpf = input("Informe o CPF do cliente: ")
+        cliente = banco.buscar_cliente_por_cpf(cpf)
+
+        if not cliente:
+            print("Cliente não encontrado.")
+            continue
+
+        if not cliente.contas:
+            print("O cliente não possui contas.")
+            continue
+
+        try:
+            if len(cliente.contas) == 1:
+                conta = cliente.contas[0]
+                print(f"Conta única encontrada: Agência: {conta.agencia}, Número: {conta.numero}")
+            else:
+                print("\nContas do cliente:")
+                for i, c in enumerate(cliente.contas):
+                    print(f"[{i}] Agência: {c.agencia}, Número: {c.numero}")
+
+                indice = int(input("Escolha uma conta para listar as transações: "))
+                conta = cliente.contas[indice]
+        except (ValueError, IndexError):
+            print("Conta inválida.")
+            continue
+
+        tipo_transacao = input("Informe o tipo de transação (Saque, Depósito, Registro de Transação, Criação de Conta): ").strip().lower()
+
+        print("\nTransações encontradas:")
+        for t in conta.historico.gerar_transacoes(tipo=tipo_transacao):
+            print(f"Data: {t['data']} | Tipo: {t['tipo']} | Valor: R$ {t['valor']:.2f}")
+
 
     elif opcao.upper() == "Q":
         break
