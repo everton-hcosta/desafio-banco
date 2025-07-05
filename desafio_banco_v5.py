@@ -69,30 +69,48 @@ class Conta:
         self.numero = numero
         self.agencia = "0001"
         self.cliente = cliente
+        self.limite_transacoes = 10
         self._historico = Historico()
 
     @Historico.registrar_transacao
     def sacar(self, valor):
-        if valor > self._saldo:
+        hoje = datetime.now().date()
+        numero_transacoes = len([
+            transacao for transacao in self.historico.transacoes
+            if datetime.strptime(transacao['data'], '%d/%m/%Y %H:%M:%S').date() == hoje
+        ])
+
+        if numero_transacoes >= self.limite_transacoes:
+            print("Número máximo de transações diárias atingido")
+        elif valor > self._saldo:
             print("Saldo insuficiente")
-            return False
         elif valor > 0:
             self._saldo -= valor
             print("Saque realizado com sucesso!")
             return True
         else:
             print("Valor inválido")
-            return False
+        return False
 
     @Historico.registrar_transacao
     def depositar(self, valor):
-        if valor > 0:
+        hoje = datetime.now().date()
+        numero_transacoes = len([
+            transacao for transacao in self.historico.transacoes
+            if datetime.strptime(transacao['data'], '%d/%m/%Y %H:%M:%S').date() == hoje
+        ])
+
+        if numero_transacoes >= self.limite_transacoes:
+            print("Número máximo de transações diárias atingido")
+        elif valor > 0:
             self._saldo += valor
             print("Depósito realizado com sucesso!")
             return True
         else:
             print("Valor inválido")
-            return False
+
+        return False
+            
 
     @property
     def saldo(self):
@@ -383,7 +401,8 @@ while True:
                 print("\nEXTRATO:")
                 for transacao in extrato:
                     print(f"Data: {transacao['data']} | Tipo: {transacao['tipo']} | Valor: R$ {transacao['valor']:.2f}")
-                print(f"Saldo atual: R$ {conta.saldo:.2f}")
+                print(f"\nQuantidade de transações realizadas hoje, {datetime.today().date().strftime('%d/%m/%Y')}: {len(extrato)}"
+                      f"\nSaldo atual: R$ {conta.saldo:.2f}")
             else:
                 print("Esta conta ainda não executou operações.")
         except ValueError:
