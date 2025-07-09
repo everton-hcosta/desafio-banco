@@ -1,9 +1,7 @@
-from datetime import datetime
-from abc import ABC, abstractmethod
-from functools import wraps
-from pathlib import Path
-import os
 import csv
+from abc import ABC, abstractmethod
+from datetime import datetime
+from pathlib import Path
 
 # Variáveis iniciais
 ROOT_PATH = Path(__file__).parent
@@ -29,7 +27,11 @@ class PessoaFisica(Cliente):
         self.cpf = cpf
 
     def __str__(self):
-        return f"Cliente: {self.nome}, CPF: {self.cpf}, Data de Nascimento: {self.data_nascimento}, Endereço: {self.endereco}"
+        return (
+            f"Cliente: {self.nome}, CPF: {self.cpf}, "
+            f"Data de Nascimento: {self.data_nascimento}, "
+            f"Endereço: {self.endereco}"
+        )
 
     def __repr__(self) -> str:
         return f"<{self.__class__.__name__}: ('{self.cpf}')>"
@@ -61,28 +63,35 @@ class Historico:
 
                 with open(ROOT_PATH / "log.txt", "a") as log_file:
                     log_file.write(
-                        f"[{data_hora}] Função '{func.__name__}' executada com argumentos {repr(args)} e {repr(kwargs)}. Retornou {repr(result)}\n"
+                        f"[{data_hora}] Função '{func.__name__}' "
+                        f"executada com argumentos "
+                        f"'{repr(args)} e {repr(kwargs)}.' "
+                        f"Retornou {repr(result)}\n"
                     )
 
             except FileNotFoundError as e:
                 result = None
                 with open(ROOT_PATH / "log.txt", "a") as log_file:
                     log_file.write(
-                        f"[{data_hora}] Erro ao executar '{nome_amigavel}': Arquivo não encontrado. Detalhes: {e}"
+                        f"[{data_hora}] Erro ao executar '{nome_amigavel}': "
+                        f"Arquivo não encontrado. Detalhes: {e}"
                     )
 
                 print(
-                    f"[{data_hora}] Erro ao executar '{nome_amigavel}'. Veja mais detalhes do arquivo de log."
+                    f"[{data_hora}] Erro ao executar '{nome_amigavel}'. "
+                    f"Veja mais detalhes do arquivo de log."
                 )
 
             except PermissionError as e:
                 result = None
                 with open(ROOT_PATH / "log.txt", "a") as log_file:
                     log_file.write(
-                        f"[{data_hora}] Erro ao executar '{nome_amigavel}': Permissão negada. Detalhes: {e}"
+                        f"[{data_hora}] Erro ao executar '{nome_amigavel}': "
+                        f"Permissão negada. Detalhes: {e}"
                     )
                 print(
-                    f"[{data_hora}] Erro ao executar '{nome_amigavel}'. Veja mais detalhes do arquivo de log."
+                    f"[{data_hora}] Erro ao executar '{nome_amigavel}'. "
+                    f"Veja mais detalhes do arquivo de log."
                 )
 
             print(f"[{data_hora}] Transação: {nome_amigavel}")
@@ -186,7 +195,6 @@ class ContaCorrente(Conta):
             ]
         )
 
-        # FIXME: Verificar as datas dos saques para garantir que não exceda o limite diário
         if numero_saques >= self.limite_saque:
             print("Número máximo de saques diários atingido")
 
@@ -202,10 +210,18 @@ class ContaCorrente(Conta):
         return False
 
     def __str__(self):
-        return f"Agência {self.agencia} - Conta Corrente {self.numero} - Cliente: {self.cliente.nome}"
+        return (
+            f"Agência {self.agencia} - Conta Corrente "
+            f"{self.numero} - Cliente: {self.cliente.nome}"
+        )
 
     def __repr__(self):
-        return f"<{self.__class__.__name__}: ('{self.agencia}', '{self.numero}', '{self.cliente.nome}')>"
+        return (
+            f"<{self.__class__.__name__}: "
+            f"('{self.agencia}', "
+            f"'{self.numero}', "
+            f"'{self.cliente.nome}')>"
+        )
 
 
 class Transacao(ABC):
@@ -349,24 +365,26 @@ class Banco:
             print("Cliente adicionado com sucesso.")
 
         except FileNotFoundError as e:
-            result = None
             with open(ROOT_PATH / "log.txt", "a") as log_file:
                 log_file.write(
-                    f"[{data_hora}] Erro ao salvar cliente: Arquivo não encontrado. Detalhes: {e}"
+                    f"[{data_hora}] Erro ao salvar cliente: "
+                    f"Arquivo não encontrado. Detalhes: {e}"
                 )
 
             print(
-                f"[{data_hora}] Erro ao salvar cliente. Veja mais detalhes do arquivo de log."
+                f"[{data_hora}] Erro ao salvar cliente. "
+                f"Veja mais detalhes do arquivo de log."
             )
 
         except PermissionError as e:
-            result = None
             with open(ROOT_PATH / "log.txt", "a") as log_file:
                 log_file.write(
-                    f"[{data_hora}] Erro ao salvar cliente: Permissão negada. Detalhes: {e}"
+                    f"[{data_hora}] Erro ao salvar cliente: "
+                    f"Permissão negada. Detalhes: {e}"
                 )
             print(
-                f"[{data_hora}] Erro ao salvar cliente. Veja mais detalhes do arquivo de log."
+                f"[{data_hora}] Erro ao salvar cliente. "
+                f"Veja mais detalhes do arquivo de log."
             )
 
         return True
@@ -399,24 +417,26 @@ class Banco:
                 )
             print(f"Conta {conta.numero} criada com sucesso.")
         except FileNotFoundError as e:
-            result = None
             with open(ROOT_PATH / "log.txt", "a") as log_file:
                 log_file.write(
-                    f"[{data_hora}] Erro ao salvar conta: Arquivo não encontrado. Detalhes: {e}"
+                    f"[{data_hora}] Erro ao salvar conta: "
+                    f"Arquivo não encontrado. Detalhes: {e}"
                 )
 
             print(
-                f"[{data_hora}] Erro ao salvar conta. Veja mais detalhes do arquivo de log."
+                f"[{data_hora}] Erro ao salvar conta. "
+                f"Veja mais detalhes do arquivo de log."
             )
 
         except PermissionError as e:
-            result = None
             with open(ROOT_PATH / "log.txt", "a") as log_file:
                 log_file.write(
-                    f"[{data_hora}] Erro ao salvar conta: Permissão negada. Detalhes: {e}"
+                    f"[{data_hora}] Erro ao salvar conta: "
+                    f"Permissão negada. Detalhes: {e}"
                 )
             print(
-                f"[{data_hora}] Erro ao salvar conta. Veja mais detalhes do arquivo de log."
+                f"[{data_hora}] Erro ao salvar conta. "
+                f"Veja mais detalhes do arquivo de log."
             )
 
     def buscar_cliente_por_cpf(self, cpf):
@@ -517,7 +537,8 @@ while True:
             if len(cliente.contas) == 1:
                 conta = cliente.contas[0]
                 print(
-                    f"Conta única encontrada: Agência: {conta.agencia}, Número: {conta.numero}"
+                    f"Conta única encontrada: Agência: "
+                    f"{conta.agencia}, Número: {conta.numero}"
                 )
             else:
                 print("\nContas do cliente:")
@@ -555,7 +576,8 @@ while True:
             if len(cliente.contas) == 1:
                 conta = cliente.contas[0]
                 print(
-                    f"Conta única encontrada: Agência: {conta.agencia}, Número: {conta.numero}"
+                    f"Conta única encontrada: "
+                    f"Agência: {conta.agencia}, Número: {conta.numero}"
                 )
             else:
                 print("\nContas do cliente:")
@@ -591,10 +613,13 @@ while True:
                 print("\nEXTRATO:")
                 for transacao in extrato:
                     print(
-                        f"Data: {transacao['data']} | Tipo: {transacao['tipo']} | Valor: R$ {transacao['valor']:.2f}"
+                        f"Data: {transacao['data']} "
+                        f"| Tipo: {transacao['tipo']} "
+                        f"| Valor: R$ {transacao['valor']:.2f}"
                     )
                 print(
-                    f"\nQuantidade de transações realizadas hoje, {datetime.today().date().strftime('%d/%m/%Y')}: {len(extrato)}"
+                    f"\nQuantidade de transações realizadas hoje, "
+                    f"{datetime.today().date().strftime('%d/%m/%Y')}: {len(extrato)}"
                     f"\nSaldo atual: R$ {conta.saldo:.2f}"
                 )
             else:
@@ -612,7 +637,8 @@ while True:
         print("Lista de Contas:")
         for conta in banco.iterar_contas():
             print(
-                f"Número: {conta['número']}, Agência: {conta['agência']}, Cliente: {conta['cliente']}, Saldo: R$ {conta['saldo']:.2f}"
+                f"Número: {conta['número']}, Agência: {conta['agência']}, "
+                f"Cliente: {conta['cliente']}, Saldo: R$ {conta['saldo']:.2f}"
             )
 
     elif opcao.upper() == "LCC":
@@ -652,7 +678,8 @@ while True:
 
         tipo_transacao = (
             input(
-                "Informe o tipo de transação (Saque, Depósito, Registro de Transação, Criação de Conta): "
+                "Informe o tipo de transação "
+                "(Saque, Depósito, Registro de Transação, Criação de Conta): "
             )
             .strip()
             .lower()
