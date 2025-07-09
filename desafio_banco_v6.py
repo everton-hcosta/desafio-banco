@@ -1,6 +1,11 @@
 from datetime import datetime
 from abc import ABC, abstractmethod
 from functools import wraps
+from pathlib import Path
+import os, csv
+
+# Variáveis iniciais
+ROOT_PATH = Path(__file__).parent
 
 class Cliente:
     def __init__(self, endereco):
@@ -24,6 +29,9 @@ class PessoaFisica(Cliente):
     def __str__(self):
         return f"Cliente: {self.nome}, CPF: {self.cpf}, Data de Nascimento: {self.data_nascimento}, Endereço: {self.endereco}"
     
+    def __repr__(self) -> str:
+        return f"<{self.__class__.__name__}: ('{self.cpf}')>"
+    
 class Historico:
     def __init__(self):
         self._transacoes = []
@@ -45,8 +53,34 @@ class Historico:
             nome_metodo = func.__name__
             nome_amigavel = nomes_metodos.get(nome_metodo, nome_metodo.capitalize())
             data_hora = datetime.now().strftime('%d/%m/%Y %H:%M:%S')
+            try:
+                result = func(*args, **kwargs)
+
+                with open(ROOT_PATH / "log.txt", "a") as log_file:
+                    log_file.write(
+                        f"[{data_hora}] Função '{func.__name__}' executada com argumentos {repr(args)} e {repr(kwargs)}. Retornou {repr(result)}\n"
+                    )
+
+
+            except FileNotFoundError as e:
+                result = None
+                with open(ROOT_PATH / "log.txt", "a") as log_file:
+                    log_file.write(
+                        f"[{data_hora}] Erro ao executar '{nome_amigavel}': Arquivo não encontrado. Detalhes: {e}"
+                        )
+                    
+                print(f"[{data_hora}] Erro ao executar '{nome_amigavel}'. Veja mais detalhes do arquivo de log.")
+
+            except PermissionError as e:
+                result = None
+                with open(ROOT_PATH / "log.txt", "a") as log_file:
+                    log_file.write(
+                        f"[{data_hora}] Erro ao executar '{nome_amigavel}': Permissão negada. Detalhes: {e}"
+                        )
+                print(f"[{data_hora}] Erro ao executar '{nome_amigavel}'. Veja mais detalhes do arquivo de log.")
+
             print(f"[{data_hora}] Transação: {nome_amigavel}")
-            return func(*args, **kwargs)
+            return result
 
         return wrapper
 
@@ -148,6 +182,9 @@ class ContaCorrente(Conta):
     
     def __str__(self):
         return f"Agência {self.agencia} - Conta Corrente {self.numero} - Cliente: {self.cliente.nome}"
+    
+    def __repr__(self):
+        return f"<{self.__class__.__name__}: ('{self.agencia}', '{self.numero}', '{self.cliente.nome}')>"
 
 
 class Transacao(ABC):
@@ -214,23 +251,127 @@ class ContaIterador:
 
 class Banco:
     def __init__(self):
-        self.clientes = []
-        self.contas = []
+        self.clientes = self.carregar_clientes()
+        self.contas = self.carregar_contas()
+        self.indice_conta = len(self.contas) + 1 if self.contas else 1
+
+    def carregar_clientes(self):
+        clientes = []
+        caminho = ROOT_PATH / "clientes.csv"
+
+        if not caminho.exists():
+            return clientes  # Arquivo ainda não existe
+
+        with open(caminho, mode="r", newline="", encoding="utf-8") as arquivo:
+            leitor = csv.DictReader(arquivo)
+            for linha in leitor:
+                nome = linha.get("Nome")
+                cpf = linha.get("CPF")
+                data_nascimento = linha.get("Data de Nascimento")
+                endereco = linha.get("Endereço")
+
+                cliente = PessoaFisica(nome, data_nascimento, cpf, endereco)
+                clientes.append(cliente)
+
+        return clientes
+    
+    def carregar_contas(self):
+        caminho = ROOT_PATH / "contas.csv"
+        contas = []
+        
+        if not caminho.exists():
+            return contas
+
+        with open(caminho, mode="r", newline="", encoding="utf-8") as arquivo:
+            reader = csv.DictReader(arquivo)
+            for linha in reader:
+                cliente = self.buscar_cliente_por_cpf(linha["CPF"])
+                if cliente:
+                    conta = ContaCorrente(
+                        numero=int(linha["Número"]),
+                        cliente=cliente,
+                        limite=float(linha.get("Limite", 500)),
+                        limite_saque=int(linha.get("Limite Saque", 3))
+                    )
+                    contas.append(conta)
+        return contas
 
     @Historico.registrar_transacao
     def adicionar_cliente(self, cliente):
+        data_hora = datetime.now().strftime('%d/%m/%Y %H:%M:%S')
+
         if any(c.cpf == cliente.cpf for c in self.clientes):
             print("Cliente já cadastrado.")
             return False
-        self.clientes.append(cliente)
-        print("Cliente adicionado com sucesso.")
+
+        try:
+            caminho = ROOT_PATH / "clientes.csv"
+            escrever_cabecalho = not caminho.exists()
+
+            with open(caminho, mode="a", newline="", encoding="utf-8") as arquivo:
+                writer = csv.writer(arquivo)
+                
+                if escrever_cabecalho:
+                    writer.writerow(["Nome", "CPF", "Data de Nascimento", "Endereço"])
+
+                writer.writerow([cliente.nome, cliente.cpf, cliente.data_nascimento, cliente.endereco])
+            
+            self.clientes.append(cliente)  # <- Adiciona à lista em memória
+            print("Cliente adicionado com sucesso.")
+
+        except FileNotFoundError as e:
+                result = None
+                with open(ROOT_PATH / "log.txt", "a") as log_file:
+                    log_file.write(
+                        f"[{data_hora}] Erro ao salvar cliente: Arquivo não encontrado. Detalhes: {e}"
+                        )
+                    
+                print(f"[{data_hora}] Erro ao salvar cliente. Veja mais detalhes do arquivo de log.")
+
+        except PermissionError as e:
+            result = None
+            with open(ROOT_PATH / "log.txt", "a") as log_file:
+                log_file.write(
+                    f"[{data_hora}] Erro ao salvar cliente: Permissão negada. Detalhes: {e}"
+                    )
+            print(f"[{data_hora}] Erro ao salvar cliente. Veja mais detalhes do arquivo de log.")
+
         return True
 
     @Historico.registrar_transacao
     def adicionar_conta(self, conta):
         self.contas.append(conta)
         conta.cliente.adicionar_conta(conta)
-        print(f"Conta {conta.numero} criada com sucesso.")
+        self.indice_conta += 1
+        data_hora = datetime.now().strftime('%d/%m/%Y %H:%M:%S')
+
+        try:
+            caminho = ROOT_PATH / "contas.csv"
+            file_exists = caminho.exists()
+
+            with open(caminho, mode="a", newline="", encoding="utf-8") as arquivo:
+                writer = csv.writer(arquivo)
+                if not file_exists:
+                    writer.writerow(["Número", "Agência", "CPF", "Limite", "Limite Saque"])
+                writer.writerow([conta.numero, conta.agencia, conta.cliente.cpf, conta.limite, conta.limite_saque])
+            print(f"Conta {conta.numero} criada com sucesso.")
+        except FileNotFoundError as e:
+                result = None
+                with open(ROOT_PATH / "log.txt", "a") as log_file:
+                    log_file.write(
+                        f"[{data_hora}] Erro ao salvar conta: Arquivo não encontrado. Detalhes: {e}"
+                        )
+                    
+                print(f"[{data_hora}] Erro ao salvar conta. Veja mais detalhes do arquivo de log.")
+
+        except PermissionError as e:
+            result = None
+            with open(ROOT_PATH / "log.txt", "a") as log_file:
+                log_file.write(
+                    f"[{data_hora}] Erro ao salvar conta: Permissão negada. Detalhes: {e}"
+                    )
+            print(f"[{data_hora}] Erro ao salvar conta. Veja mais detalhes do arquivo de log.")
+
 
     def buscar_cliente_por_cpf(self, cpf):
         return next((c for c in self.clientes if c.cpf == cpf), None)
@@ -255,6 +396,9 @@ class Banco:
 
     def iterar_contas(self):
         return ContaIterador(self.contas)
+    
+    def __repr__(self):
+        return f"<{self.__class__.__name__}>"
 
 
 menu = """
@@ -274,14 +418,7 @@ Selecione uma operação:
 
 => """
 
-# Variáveis iniciais
 banco = Banco()
-contas = []
-contas_correntes = []
-indice_conta = 1
-saldo = 0
-extrato = []
-numero_saques = 0
 
 while True:
 
@@ -299,8 +436,7 @@ while True:
             continue
         
         try:
-            banco.adicionar_conta(conta=ContaCorrente(numero=indice_conta, cliente=cliente))
-            indice_conta += 1
+            banco.adicionar_conta(conta=ContaCorrente(numero=banco.indice_conta, cliente=cliente))
         except ValueError as e:
             print(f"Erro ao criar conta corrente: {e}")
 
