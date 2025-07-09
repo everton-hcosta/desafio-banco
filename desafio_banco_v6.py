@@ -2,10 +2,12 @@ from datetime import datetime
 from abc import ABC, abstractmethod
 from functools import wraps
 from pathlib import Path
-import os, csv
+import os
+import csv
 
 # Variáveis iniciais
 ROOT_PATH = Path(__file__).parent
+
 
 class Cliente:
     def __init__(self, endereco):
@@ -17,8 +19,8 @@ class Cliente:
 
     def adicionar_conta(self, conta):
         self.contas.append(conta)
-    
-    
+
+
 class PessoaFisica(Cliente):
     def __init__(self, nome, data_nascimento, cpf, endereco):
         super().__init__(endereco)
@@ -28,10 +30,11 @@ class PessoaFisica(Cliente):
 
     def __str__(self):
         return f"Cliente: {self.nome}, CPF: {self.cpf}, Data de Nascimento: {self.data_nascimento}, Endereço: {self.endereco}"
-    
+
     def __repr__(self) -> str:
         return f"<{self.__class__.__name__}: ('{self.cpf}')>"
-    
+
+
 class Historico:
     def __init__(self):
         self._transacoes = []
@@ -39,20 +42,20 @@ class Historico:
     @property
     def transacoes(self):
         return self._transacoes
-    
+
     @staticmethod
     def registrar_transacao(func):
         nomes_metodos = {
             "registrar": "Registro de Transação",
             "adicionar_conta": "Criação de Conta",
             "depositar": "Depósito",
-            "sacar": "Saque"
+            "sacar": "Saque",
         }
 
         def wrapper(*args, **kwargs):
             nome_metodo = func.__name__
             nome_amigavel = nomes_metodos.get(nome_metodo, nome_metodo.capitalize())
-            data_hora = datetime.now().strftime('%d/%m/%Y %H:%M:%S')
+            data_hora = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
             try:
                 result = func(*args, **kwargs)
 
@@ -61,23 +64,26 @@ class Historico:
                         f"[{data_hora}] Função '{func.__name__}' executada com argumentos {repr(args)} e {repr(kwargs)}. Retornou {repr(result)}\n"
                     )
 
-
             except FileNotFoundError as e:
                 result = None
                 with open(ROOT_PATH / "log.txt", "a") as log_file:
                     log_file.write(
                         f"[{data_hora}] Erro ao executar '{nome_amigavel}': Arquivo não encontrado. Detalhes: {e}"
-                        )
-                    
-                print(f"[{data_hora}] Erro ao executar '{nome_amigavel}'. Veja mais detalhes do arquivo de log.")
+                    )
+
+                print(
+                    f"[{data_hora}] Erro ao executar '{nome_amigavel}'. Veja mais detalhes do arquivo de log."
+                )
 
             except PermissionError as e:
                 result = None
                 with open(ROOT_PATH / "log.txt", "a") as log_file:
                     log_file.write(
                         f"[{data_hora}] Erro ao executar '{nome_amigavel}': Permissão negada. Detalhes: {e}"
-                        )
-                print(f"[{data_hora}] Erro ao executar '{nome_amigavel}'. Veja mais detalhes do arquivo de log.")
+                    )
+                print(
+                    f"[{data_hora}] Erro ao executar '{nome_amigavel}'. Veja mais detalhes do arquivo de log."
+                )
 
             print(f"[{data_hora}] Transação: {nome_amigavel}")
             return result
@@ -85,12 +91,14 @@ class Historico:
         return wrapper
 
     def adicionar_transacoes(self, transacao):
-        self._transacoes.append({
-            "tipo": transacao.__class__.__name__,
-            "valor": transacao.valor,
-            "data": datetime.now().strftime('%d/%m/%Y %H:%M:%S'),
-        })
-    
+        self._transacoes.append(
+            {
+                "tipo": transacao.__class__.__name__,
+                "valor": transacao.valor,
+                "data": datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
+            }
+        )
+
     def gerar_transacoes(self, tipo=None):
         for transacao in self._transacoes:
             if tipo is None or transacao["tipo"].lower() == tipo.lower():
@@ -109,10 +117,14 @@ class Conta:
     @Historico.registrar_transacao
     def sacar(self, valor):
         hoje = datetime.now().date()
-        numero_transacoes = len([
-            transacao for transacao in self.historico.transacoes
-            if datetime.strptime(transacao['data'], '%d/%m/%Y %H:%M:%S').date() == hoje
-        ])
+        numero_transacoes = len(
+            [
+                transacao
+                for transacao in self.historico.transacoes
+                if datetime.strptime(transacao["data"], "%d/%m/%Y %H:%M:%S").date()
+                == hoje
+            ]
+        )
 
         if numero_transacoes >= self.limite_transacoes:
             print("Número máximo de transações diárias atingido")
@@ -129,10 +141,14 @@ class Conta:
     @Historico.registrar_transacao
     def depositar(self, valor):
         hoje = datetime.now().date()
-        numero_transacoes = len([
-            transacao for transacao in self.historico.transacoes
-            if datetime.strptime(transacao['data'], '%d/%m/%Y %H:%M:%S').date() == hoje
-        ])
+        numero_transacoes = len(
+            [
+                transacao
+                for transacao in self.historico.transacoes
+                if datetime.strptime(transacao["data"], "%d/%m/%Y %H:%M:%S").date()
+                == hoje
+            ]
+        )
 
         if numero_transacoes >= self.limite_transacoes:
             print("Número máximo de transações diárias atingido")
@@ -144,7 +160,6 @@ class Conta:
             print("Valor inválido")
 
         return False
-            
 
     @property
     def saldo(self):
@@ -163,12 +178,18 @@ class ContaCorrente(Conta):
 
     def sacar(self, valor):
 
-        numero_saques = len([transacao for transacao in self.historico.transacoes if transacao['tipo'] == Saque.__name__])
+        numero_saques = len(
+            [
+                transacao
+                for transacao in self.historico.transacoes
+                if transacao["tipo"] == Saque.__name__
+            ]
+        )
 
-        #FIXME: Verificar as datas dos saques para garantir que não exceda o limite diário
+        # FIXME: Verificar as datas dos saques para garantir que não exceda o limite diário
         if numero_saques >= self.limite_saque:
             print("Número máximo de saques diários atingido")
-        
+
         elif valor > self.saldo:
             print("Saldo insuficiente")
 
@@ -179,10 +200,10 @@ class ContaCorrente(Conta):
             return super().sacar(valor)
 
         return False
-    
+
     def __str__(self):
         return f"Agência {self.agencia} - Conta Corrente {self.numero} - Cliente: {self.cliente.nome}"
-    
+
     def __repr__(self):
         return f"<{self.__class__.__name__}: ('{self.agencia}', '{self.numero}', '{self.cliente.nome}')>"
 
@@ -206,7 +227,7 @@ class Saque(Transacao):
     @property
     def valor(self):
         return self._valor
-    
+
     def registrar(self, conta):
         sucesso = conta.sacar(self.valor)
         if sucesso:
@@ -220,11 +241,12 @@ class Deposito(Transacao):
     @property
     def valor(self):
         return self._valor
-    
+
     def registrar(self, conta):
         sucesso = conta.depositar(self.valor)
         if sucesso:
             conta.historico.adicionar_transacoes(self)
+
 
 class ContaIterador:
     def __init__(self, contas):
@@ -245,7 +267,7 @@ class ContaIterador:
             "número": conta.numero,
             "agência": conta.agencia,
             "cliente": conta.cliente.nome,
-            "saldo": conta.saldo
+            "saldo": conta.saldo,
         }
 
 
@@ -274,11 +296,11 @@ class Banco:
                 clientes.append(cliente)
 
         return clientes
-    
+
     def carregar_contas(self):
         caminho = ROOT_PATH / "contas.csv"
         contas = []
-        
+
         if not caminho.exists():
             return contas
 
@@ -291,14 +313,14 @@ class Banco:
                         numero=int(linha["Número"]),
                         cliente=cliente,
                         limite=float(linha.get("Limite", 500)),
-                        limite_saque=int(linha.get("Limite Saque", 3))
+                        limite_saque=int(linha.get("Limite Saque", 3)),
                     )
                     contas.append(conta)
         return contas
 
     @Historico.registrar_transacao
     def adicionar_cliente(self, cliente):
-        data_hora = datetime.now().strftime('%d/%m/%Y %H:%M:%S')
+        data_hora = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
 
         if any(c.cpf == cliente.cpf for c in self.clientes):
             print("Cliente já cadastrado.")
@@ -310,31 +332,42 @@ class Banco:
 
             with open(caminho, mode="a", newline="", encoding="utf-8") as arquivo:
                 writer = csv.writer(arquivo)
-                
+
                 if escrever_cabecalho:
                     writer.writerow(["Nome", "CPF", "Data de Nascimento", "Endereço"])
 
-                writer.writerow([cliente.nome, cliente.cpf, cliente.data_nascimento, cliente.endereco])
-            
+                writer.writerow(
+                    [
+                        cliente.nome,
+                        cliente.cpf,
+                        cliente.data_nascimento,
+                        cliente.endereco,
+                    ]
+                )
+
             self.clientes.append(cliente)  # <- Adiciona à lista em memória
             print("Cliente adicionado com sucesso.")
 
         except FileNotFoundError as e:
-                result = None
-                with open(ROOT_PATH / "log.txt", "a") as log_file:
-                    log_file.write(
-                        f"[{data_hora}] Erro ao salvar cliente: Arquivo não encontrado. Detalhes: {e}"
-                        )
-                    
-                print(f"[{data_hora}] Erro ao salvar cliente. Veja mais detalhes do arquivo de log.")
+            result = None
+            with open(ROOT_PATH / "log.txt", "a") as log_file:
+                log_file.write(
+                    f"[{data_hora}] Erro ao salvar cliente: Arquivo não encontrado. Detalhes: {e}"
+                )
+
+            print(
+                f"[{data_hora}] Erro ao salvar cliente. Veja mais detalhes do arquivo de log."
+            )
 
         except PermissionError as e:
             result = None
             with open(ROOT_PATH / "log.txt", "a") as log_file:
                 log_file.write(
                     f"[{data_hora}] Erro ao salvar cliente: Permissão negada. Detalhes: {e}"
-                    )
-            print(f"[{data_hora}] Erro ao salvar cliente. Veja mais detalhes do arquivo de log.")
+                )
+            print(
+                f"[{data_hora}] Erro ao salvar cliente. Veja mais detalhes do arquivo de log."
+            )
 
         return True
 
@@ -343,7 +376,7 @@ class Banco:
         self.contas.append(conta)
         conta.cliente.adicionar_conta(conta)
         self.indice_conta += 1
-        data_hora = datetime.now().strftime('%d/%m/%Y %H:%M:%S')
+        data_hora = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
 
         try:
             caminho = ROOT_PATH / "contas.csv"
@@ -352,26 +385,39 @@ class Banco:
             with open(caminho, mode="a", newline="", encoding="utf-8") as arquivo:
                 writer = csv.writer(arquivo)
                 if not file_exists:
-                    writer.writerow(["Número", "Agência", "CPF", "Limite", "Limite Saque"])
-                writer.writerow([conta.numero, conta.agencia, conta.cliente.cpf, conta.limite, conta.limite_saque])
+                    writer.writerow(
+                        ["Número", "Agência", "CPF", "Limite", "Limite Saque"]
+                    )
+                writer.writerow(
+                    [
+                        conta.numero,
+                        conta.agencia,
+                        conta.cliente.cpf,
+                        conta.limite,
+                        conta.limite_saque,
+                    ]
+                )
             print(f"Conta {conta.numero} criada com sucesso.")
         except FileNotFoundError as e:
-                result = None
-                with open(ROOT_PATH / "log.txt", "a") as log_file:
-                    log_file.write(
-                        f"[{data_hora}] Erro ao salvar conta: Arquivo não encontrado. Detalhes: {e}"
-                        )
-                    
-                print(f"[{data_hora}] Erro ao salvar conta. Veja mais detalhes do arquivo de log.")
+            result = None
+            with open(ROOT_PATH / "log.txt", "a") as log_file:
+                log_file.write(
+                    f"[{data_hora}] Erro ao salvar conta: Arquivo não encontrado. Detalhes: {e}"
+                )
+
+            print(
+                f"[{data_hora}] Erro ao salvar conta. Veja mais detalhes do arquivo de log."
+            )
 
         except PermissionError as e:
             result = None
             with open(ROOT_PATH / "log.txt", "a") as log_file:
                 log_file.write(
                     f"[{data_hora}] Erro ao salvar conta: Permissão negada. Detalhes: {e}"
-                    )
-            print(f"[{data_hora}] Erro ao salvar conta. Veja mais detalhes do arquivo de log.")
-
+                )
+            print(
+                f"[{data_hora}] Erro ao salvar conta. Veja mais detalhes do arquivo de log."
+            )
 
     def buscar_cliente_por_cpf(self, cpf):
         return next((c for c in self.clientes if c.cpf == cpf), None)
@@ -380,7 +426,7 @@ class Banco:
         if not self.clientes:
             print("Nenhum cliente cadastrado.")
             return
-        
+
         print("Lista de Clientes:")
         for c in self.clientes:
             print(c)
@@ -389,14 +435,14 @@ class Banco:
         if not self.contas:
             print("Nenhuma conta cadastrado.")
             return
-        
+
         print("Lista de Contas:")
         for c in self.contas:
             print(c)
 
     def iterar_contas(self):
         return ContaIterador(self.contas)
-    
+
     def __repr__(self):
         return f"<{self.__class__.__name__}>"
 
@@ -432,11 +478,15 @@ while True:
         cliente = banco.buscar_cliente_por_cpf(cpf)
 
         if not cliente:
-            print("Cliente não encontrado. Por favor, crie um cliente antes de criar uma conta corrente.")
+            print(
+                "Cliente não encontrado. Por favor, crie um cliente antes de criar uma conta corrente."
+            )
             continue
-        
+
         try:
-            banco.adicionar_conta(conta=ContaCorrente(numero=banco.indice_conta, cliente=cliente))
+            banco.adicionar_conta(
+                conta=ContaCorrente(numero=banco.indice_conta, cliente=cliente)
+            )
         except ValueError as e:
             print(f"Erro ao criar conta corrente: {e}")
 
@@ -466,13 +516,15 @@ while True:
         try:
             if len(cliente.contas) == 1:
                 conta = cliente.contas[0]
-                print(f"Conta única encontrada: Agência: {conta.agencia}, Número: {conta.numero}")
+                print(
+                    f"Conta única encontrada: Agência: {conta.agencia}, Número: {conta.numero}"
+                )
             else:
                 print("\nContas do cliente:")
 
                 for i, conta in enumerate(cliente.contas):
                     print(f"[{i}] Agência: {conta.agencia}, Número: {conta.numero}")
-                
+
                 indice = int(input("Escolha uma das opções para realizar o depósito: "))
                 conta = cliente.contas[indice]
         except (ValueError, IndexError):
@@ -485,7 +537,7 @@ while True:
             cliente.realizar_transacao(conta, deposito)
         except ValueError:
             print("Valor inválido.")
-     
+
     elif opcao.upper() == "S":
         # Solicita os dados do cliente
         cpf = input("Digite o CPF do cliente: ")
@@ -502,7 +554,9 @@ while True:
         try:
             if len(cliente.contas) == 1:
                 conta = cliente.contas[0]
-                print(f"Conta única encontrada: Agência: {conta.agencia}, Número: {conta.numero}")
+                print(
+                    f"Conta única encontrada: Agência: {conta.agencia}, Número: {conta.numero}"
+                )
             else:
                 print("\nContas do cliente:")
 
@@ -536,9 +590,13 @@ while True:
             if extrato:
                 print("\nEXTRATO:")
                 for transacao in extrato:
-                    print(f"Data: {transacao['data']} | Tipo: {transacao['tipo']} | Valor: R$ {transacao['valor']:.2f}")
-                print(f"\nQuantidade de transações realizadas hoje, {datetime.today().date().strftime('%d/%m/%Y')}: {len(extrato)}"
-                      f"\nSaldo atual: R$ {conta.saldo:.2f}")
+                    print(
+                        f"Data: {transacao['data']} | Tipo: {transacao['tipo']} | Valor: R$ {transacao['valor']:.2f}"
+                    )
+                print(
+                    f"\nQuantidade de transações realizadas hoje, {datetime.today().date().strftime('%d/%m/%Y')}: {len(extrato)}"
+                    f"\nSaldo atual: R$ {conta.saldo:.2f}"
+                )
             else:
                 print("Esta conta ainda não executou operações.")
         except ValueError:
@@ -550,10 +608,12 @@ while True:
         if not banco.contas:
             print("Nenhuma conta cadastrada.")
             continue
-        
+
         print("Lista de Contas:")
         for conta in banco.iterar_contas():
-            print(f"Número: {conta['número']}, Agência: {conta['agência']}, Cliente: {conta['cliente']}, Saldo: R$ {conta['saldo']:.2f}")
+            print(
+                f"Número: {conta['número']}, Agência: {conta['agência']}, Cliente: {conta['cliente']}, Saldo: R$ {conta['saldo']:.2f}"
+            )
 
     elif opcao.upper() == "LCC":
         banco.listar_contas()
@@ -576,7 +636,9 @@ while True:
         try:
             if len(cliente.contas) == 1:
                 conta = cliente.contas[0]
-                print(f"Conta única encontrada: Agência: {conta.agencia}, Número: {conta.numero}")
+                print(
+                    f"Conta única encontrada: Agência: {conta.agencia}, Número: {conta.numero}"
+                )
             else:
                 print("\nContas do cliente:")
                 for i, c in enumerate(cliente.contas):
@@ -588,12 +650,17 @@ while True:
             print("Conta inválida.")
             continue
 
-        tipo_transacao = input("Informe o tipo de transação (Saque, Depósito, Registro de Transação, Criação de Conta): ").strip().lower()
+        tipo_transacao = (
+            input(
+                "Informe o tipo de transação (Saque, Depósito, Registro de Transação, Criação de Conta): "
+            )
+            .strip()
+            .lower()
+        )
 
         print("\nTransações encontradas:")
         for t in conta.historico.gerar_transacoes(tipo=tipo_transacao):
             print(f"Data: {t['data']} | Tipo: {t['tipo']} | Valor: R$ {t['valor']:.2f}")
-
 
     elif opcao.upper() == "Q":
         break
